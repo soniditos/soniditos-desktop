@@ -1,0 +1,46 @@
+{
+  "name": "soniditos-desktop",
+  "version": "1.0.6",
+  "description": "Música en streaming",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "icon": "electron-icon-maker --input src/assets/tray-icon.png --output src/assets"
+  },
+  "author": "Soniditos",
+  "license": "MIT",
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "electron-icon-maker": "^0.0.5"
+  },
+  "devDependencies": {
+    "electron": "^34.0.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.soniditos.desktop",
+    "productName": "Soniditos",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icons/win/icon.ico"
+    },
+    "mac": {
+      "icon": "src/assets/icons/mac/icon.icns"
+    },
+    "linux": {
+      "icon": "src/assets/icons/png/128x128.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
