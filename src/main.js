@@ -24,7 +24,7 @@ function createWindow() {
     center: true,
     show: true,
     frame: true,
-    backgroundColor: '#11141A',
+    backgroundColor: '#000000',
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     webPreferences: {
       preload: path.join(app.getAppPath(), 'src', 'preload.js'),

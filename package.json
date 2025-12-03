@@ -1,6 +1,6 @@
 {
   "name": "soniditos-desktop",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Música en streaming",
   "main": "src/main.js",
   "scripts": {
@@ -30,7 +30,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "src/assets/icons/win/icon.ico"
+      "icon": "src/assets/icons/win/icon.ico",
+      "sign": false
     },
     "mac": {
       "icon": "src/assets/icons/mac/icon.icns"
