@@ -1,7 +1,7 @@
 {
   "name": "soniditos-desktop",
-  "version": "1.0.7",
-  "description": "Música en streaming",
+  "version": "1.0.9",
+  "description": "Tu aplicación ideal para escuchar música sin anuncios.",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
