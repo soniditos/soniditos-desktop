@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; height: 40px; background: #121212; -webkit-user-select:none; }
+    /* Barra arrastrable excepto en botones */
+    .bar { display:flex; align-items:center; height:100%; padding: 6px 12px; gap:12px; -webkit-app-region: drag; box-sizing:border-box }
+    .controls { display:flex; gap:10px; align-items:center; margin-left:auto }
+    /* Botones estilo mac (sin texto) */
+    .mac-btn { -webkit-app-region: no-drag; width:12px; height:12px; border-radius:50%; display:inline-block; cursor:pointer; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,0,0,0.25) }
+    .mac-btn.red { background: #ff605c; }
+    .mac-btn.yellow { background: #ffbd44; }
+    .mac-btn.green { background: #28c940; }
+    .mac-btn:hover { transform: scale(1.12); }
+    .spacer { flex: 1; }
+    .nav { display:flex; gap:8px; align-items:center; -webkit-app-region: no-drag; }
+    .nav-btn { -webkit-app-region: no-drag; width:28px; height:28px; border-radius:6px; border:0; background:transparent; color:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer }
+    .nav-btn:hover { background: rgba(255,255,255,0.04) }
+    .nav-btn svg { display:block }
+    .nav-btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; color: rgba(255,255,255,0.45); }
+    /* Forzar trazo gris en SVG cuando el botón esté deshabilitado */
+    .nav-btn:disabled svg path { stroke: rgba(255,255,255,0.45) !important; }
+    .now-playing {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-family: 'Maven Pro', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      font-weight: 500;
+      font-size: 13px;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: 0.2px;
+      max-width: 60%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+    }
+    .now-playing-inner { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; }
+    .now-icon { width: 20px; height: 20px; object-fit: cover; border-radius: 3px; transition: transform 260ms ease, opacity 260ms ease; opacity: 0.95; }
+    .now-icon.playing { animation: pulse 1200ms infinite ease-in-out; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    .now-text { max-width: calc(60vw - 36px); text-overflow: ellipsis; white-space: nowrap; overflow: hidden; display: inline-block; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div id="nowPlaying" class="now-playing" aria-live="polite">
+      <div class="now-playing-inner">
+        <img id="nowIcon" class="now-icon" src="" alt="icon" style="display:none" />
+        <span id="nowText" class="now-text"></span>
+      </div>
+    </div>
+    <div class="nav">
+      <button id="back" class="nav-btn" disabled title="Atrás" aria-label="Atrás">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="forward" class="nav-btn" disabled title="Adelante" aria-label="Adelante">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="spacer"></div>
+    <div class="controls">
+      <div id="min" class="mac-btn yellow" title="Minimizar"></div>
+      <div id="max" class="mac-btn green" title="Maximizar"></div>
+      <div id="close" class="mac-btn red" title="Cerrar"></div>
+    </div>
+  </div>
+  <script>
+    const min = document.getElementById('min');
+    const max = document.getElementById('max');
+    const close = document.getElementById('close');
+
+    min?.addEventListener('click', () => window.electronAPI?.minimizeWindow());
+    max?.addEventListener('click', () => window.electronAPI?.maximizeWindow());
+    close?.addEventListener('click', () => window.electronAPI?.closeWindow());
+
+    const back = document.getElementById('back');
+    const forward = document.getElementById('forward');
+    // Inicialmente deshabilitados hasta recibir estado
+    if (back) back.disabled = true;
+    if (forward) forward.disabled = true;
+    back?.addEventListener('click', (e) => { if (back.disabled) return; window.electronAPI?.navigateBack(); });
+    forward?.addEventListener('click', (e) => { if (forward.disabled) return; window.electronAPI?.navigateForward(); });
+
+    // Actualizar estado según mensajes del proceso principal
+    window.electronAPI?.onNavigationState((state) => {
+      try {
+        console.log('[controls] nav-state', state);
+        if (back) back.disabled = !state.canGoBack;
+        if (forward) forward.disabled = !state.canGoForward;
+      } catch (e) { console.error(e); }
+    });
+
+    // Solicitar estado inicial
+    window.electronAPI?.requestNavState();
+
+    // Mostrar ahora sonando con icono animado
+    const nowPlaying = document.getElementById('nowPlaying');
+    const nowIcon = document.getElementById('nowIcon');
+    const nowText = document.getElementById('nowText');
+    function renderNowPlaying(data) {
+      try {
+        if (!nowPlaying) return;
+        if (!data || (!data.title && !data.artist)) {
+          nowText.textContent = '';
+          nowPlaying.style.display = 'none';
+          nowIcon.classList.remove('playing');
+        } else {
+          const title = data.title || '';
+          const artist = data.artist ? ` — ${data.artist}` : '';
+          nowText.textContent = `${title}${artist}`.trim();
+          nowPlaying.style.display = 'block';
+          // artwork preference: show artwork if available, otherwise hide icon
+          if (data.artwork) {
+            nowIcon.src = data.artwork;
+            nowIcon.style.display = '';
+          } else {
+            nowIcon.src = '';
+            nowIcon.style.display = 'none';
+          }
+          // animate only when playing
+          if (data.playbackState === 'playing' || (!data.playbackState && data.title)) {
+            nowIcon.classList.add('playing');
+          } else {
+            nowIcon.classList.remove('playing');
+          }
+        }
+      } catch (e) { }
+    }
+
+    window.electronAPI?.onNowPlaying((d) => {
+      renderNowPlaying(d);
+    });
+  </script>
+</body>
+</html>
