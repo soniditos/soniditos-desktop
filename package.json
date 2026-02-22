@@ -1,6 +1,6 @@
 {
   "name": "soniditos-desktop",
-  "version": "1.0.9",
+  "version": "2.0.0",
   "description": "Tu aplicación ideal para escuchar música sin anuncios.",
   "main": "src/main.js",
   "scripts": {
