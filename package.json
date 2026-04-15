@@ -1,6 +1,6 @@
 {
   "name": "soniditos-desktop",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Soniditos",
   "main": "src/main.js",
   "scripts": {
@@ -12,7 +12,8 @@
   "license": "MIT",
   "dependencies": {
     "discord-rpc": "^4.0.1",
-    "electron-icon-maker": "^0.0.5"
+    "electron-icon-maker": "^0.0.5",
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "electron": "^34.0.1",
@@ -42,6 +43,11 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "soniditos",
+      "repo": "soniditos-desktop"
     }
   }
 }

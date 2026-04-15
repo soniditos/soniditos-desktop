@@ -1,4 +1,5 @@
 const { app, BrowserWindow, BrowserView, Tray, Menu, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const rpc = require('discord-rpc');
 const path = require('path');
 const fs = require('fs');
@@ -561,9 +562,35 @@ function createTray() {
   });
 }
 
+// Auto-update: silent download, install automatically when app quits
+let updateDownloaded = false;
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-downloaded', () => {
+  updateDownloaded = true;
+  // Add tray menu option to install now
+  if (tray) {
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Actualización lista — Reiniciar para instalar', enabled: false },
+      { label: 'Reiniciar y actualizar', click: () => { autoUpdater.quitAndInstall(); } },
+      { type: 'separator' },
+      { label: 'Mostrar aplicación', click: () => { if (win) win.show(); } },
+      { label: 'Cerrar', click: () => { app.isQuiting = true; app.quit(); } }
+    ]);
+    tray.setContextMenu(contextMenu);
+    tray.setToolTip('Soniditos — Actualización lista');
+  }
+});
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
+
+  // Check for updates silently 3 seconds after startup
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 3000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
