@@ -1,81 +1,60 @@
-# Soniditos Desktop 🎵
+<p align="center">
+  <img src="https://open.soniditos.com/cat_footer.svg" width="80" />
+</p>
 
-Aplicación de escritorio oficial de open.soniditos.com
+<h1 align="center">Soniditos Desktop</h1>
 
-## Características ✨
+<p align="center">
+  Aplicación de escritorio oficial de <a href="https://open.soniditos.com">open.soniditos.com</a>
+</p>
 
-- Interfaz de escritorio nativa con controles de ventana personalizados
-- Integración con la bandeja del sistema
-- Experiencia de usuario optimizada para escritorio
+<p align="center">
+  <a href="https://github.com/soniditos/soniditos-desktop/releases/latest"><img src="https://img.shields.io/github/v/release/soniditos/soniditos-desktop?style=for-the-badge&label=Descargar&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+  <a href="/LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=Licencia&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+</p>
 
-## Requisitos Previos 📋
+---
 
-- Node.js (v14 o superior)
-- npm (v6 o superior)
+## Características
 
-## Instalación 🚀
+- Controles de ventana personalizados (minimizar, maximizar, cerrar)
+- Barra de título con tema claro/oscuro automático, sincronizado con la web
+- Canción actual visible en la barra de título
+- Integración con Discord RPC — muestra lo que estás escuchando
+- Icono en la bandeja del sistema
+- Actualizaciones automáticas silenciosas
 
-1. Clona el repositorio:
-    ```bash
-    git clone https://github.com/tu-usuario/soniditos-desktop.git
-    ```
+## Instalación
 
-2. Instala las dependencias:
-    ```bash
-    cd soniditos-desktop
-    npm install
-    ```
+Descarga el instalador desde [Releases](https://github.com/soniditos/soniditos-desktop/releases/latest) y ejecútalo.
 
-3. Inicia la aplicación:
-    ```bash
-    npm start
-    ```
+La aplicación se actualiza automáticamente al abrirse cuando hay una nueva versión disponible.
 
-## Desarrollo 💻
+## Desarrollo
 
-- Para construir la aplicación:
+**Requisitos:** Node.js 18+ y npm
 
-    ```bash
-    npm run build
-    ```
-
-## Tecnologías Utilizadas 🛠️
-
-- electron.js
-- electron-builder
-- discord-rpc
-
-
-## Estructura del Proyecto 📁
-
-```
-soniditos-desktop/
-├── src/
-│   ├── main/
-│   │   └── (archivos del proceso principal)
-│   ├── renderer/
-│   │   └── (archivos del proceso de renderizado)
-│   └── preload/
-│       └── (scripts de precarga)
-├── public/
-│   └── (archivos estáticos)
-└── ...
+```bash
+git clone https://github.com/soniditos/soniditos-desktop.git
+cd soniditos-desktop
+npm install
+npm start
 ```
 
-## Licencia
+**Compilar instalador:**
+```bash
+npm run build
+```
+
+## Tecnologías
+
+- [Electron](https://electronjs.org)
+- [electron-builder](https://electron.build)
+- [electron-updater](https://www.electron.build/auto-update)
+- [discord-rpc](https://github.com/discordjs/RPC)
+
+---
 
 <p align="center">
-	Repositorio generado por <a href="https://github.com/virtuanista" target="_blank">virtu 🎣</a>
-</p>
-
-<p align="center">
-	<img src="https://open.soniditos.com/cat_footer.svg" />
-</p>
-
-<p align="center">
-	Copyright &copy; 2026
-</p>
-
-<p align="center">
-	<a href="/LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+  Copyright &copy; 2026 Soniditos
 </p>
