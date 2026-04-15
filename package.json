@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
+    "release": "dotenv electron-builder --publish always",
     "icon": "electron-icon-maker --input src/assets/tray-icon.png --output src/assets"
   },
   "author": "Soniditos",
@@ -16,6 +17,7 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
+    "dotenv-cli": "^11.0.0",
     "electron": "^34.0.1",
     "electron-builder": "^25.1.8"
   },
@@ -47,7 +49,8 @@
     "publish": {
       "provider": "github",
       "owner": "soniditos",
-      "repo": "soniditos-desktop"
+      "repo": "soniditos-desktop",
+      "draft": false
     }
   }
 }
