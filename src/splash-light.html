@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Soniditos</title>
+  <style>
+    html,body{height:100%;margin:0;background:#ffffff;color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;opacity:1;transition:opacity 200ms ease}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 200ms ease}
+    .logo{width:160px;height:160px;display:flex;align-items:center;justify-content:center}
+    .logo svg{width:100%;height:100%}
+    body.fade-out{opacity:0}
+    body.fade-out .wrap{opacity:0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">
+      <svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 512 512">
+        <defs>
+          <style>
+            .st0 { fill: #ff4900; }
+          </style>
+        </defs>
+        <path class="st0" d="M183.64,17.1c21.7-.47,40.23,14.44,41.26,33.5l-.06,413.01c-6.48,42.26-74.77,41.58-80.04-.86l.06-414.83c2.58-16.79,19.38-30.42,38.8-30.84h-.02v.03Z"/>
+        <path class="st0" d="M323.59,58.73c21.96-2.55,41.52,12.05,44.19,34.15l-.05,327.52c-6.92,41.79-64.74,45-76.37,4.52-3.44-109.67-.54-220.03-1.48-329.98,1.39-17.68,15.86-34.1,33.72-36.18h-.02v-.02Z"/>
+        <path class="st0" d="M34.69,95.64c22.55-2.54,42.68,11.96,45.4,33.9l-.14,254.8c-9.18,45.43-76.1,42.19-79.95-4.82l.06-247.96c1.43-17.56,16.28-33.87,34.64-35.94h-.02v.02Z"/>
+        <path class="st0" d="M468.45,96.85c21.64-2.52,40.94,11.87,43.55,33.65l-.14,252.87c-8.82,45.08-73,41.88-76.69-4.79l.06-246.07c1.37-17.44,15.63-33.62,33.24-35.67h-.02l-.02.02Z"/>
+      </svg>
+    </div>
+  </div>
+  <script>
+    window.fadeOut = function(){ return new Promise((res)=>{ try{ document.body.classList.add('fade-out'); setTimeout(res,200);}catch(e){res();} }); };
+  </script>
+</body>
+</html>

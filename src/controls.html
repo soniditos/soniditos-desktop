@@ -4,16 +4,22 @@
   <meta charset="utf-8" />
   <link href="https://fonts.googleapis.com/css2?family=Maven+Pro:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; height: 40px; background: #121212; -webkit-user-select:none; }
+    body { margin: 0; height: 40px; background: #0f0f0f; -webkit-user-select:none; transition: background-color 180ms ease, color 180ms ease; opacity:1 }
     /* Barra arrastrable excepto en botones */
-    .bar { display:flex; align-items:center; height:100%; padding: 6px 12px; gap:12px; -webkit-app-region: drag; box-sizing:border-box }
+    .bar { display:flex; align-items:center; height:100%; padding: 6px 12px; gap:12px; -webkit-app-region: drag; box-sizing:border-box; position:relative }
     .controls { display:flex; gap:10px; align-items:center; margin-left:auto }
-    /* Botones estilo mac (sin texto) */
+    /* Botones estilo mac (sin texto) - legacy (no usados si se usa .win-close) */
     .mac-btn { -webkit-app-region: no-drag; width:12px; height:12px; border-radius:50%; display:inline-block; cursor:pointer; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.02); border:1px solid rgba(0,0,0,0.25) }
     .mac-btn.red { background: #ff605c; }
     .mac-btn.yellow { background: #ffbd44; }
     .mac-btn.green { background: #28c940; }
     .mac-btn:hover { transform: scale(1.12); }
+    /* Botones estilo Windows (min/max/close) */
+    .win-btn { -webkit-app-region: no-drag; width:36px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:0; background:transparent; color: #ffffff; border-radius:4px; cursor:pointer; line-height:0 }
+    .win-btn svg { display:block; width:14px; height:14px; }
+    .win-btn:hover { background: rgba(255,255,255,0.06) }
+    .win-btn.close:hover { background: rgba(232,17,35,0.95); color: #fff }
+    .win-btn:active { transform: translateY(1px) }
     .spacer { flex: 1; }
     .nav { display:flex; gap:8px; align-items:center; -webkit-app-region: no-drag; }
     .nav-btn { -webkit-app-region: no-drag; width:28px; height:28px; border-radius:6px; border:0; background:transparent; color:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer }
@@ -48,36 +54,55 @@
     .now-icon.playing { animation: pulse 1200ms infinite ease-in-out; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
     .now-text { max-width: calc(60vw - 36px); text-overflow: ellipsis; white-space: nowrap; overflow: hidden; display: inline-block; vertical-align: middle; }
+    /* Tema claro: invertir colores para controles */
+    body.light { background: #ffffff; color: #111111 }
+    body.light .now-playing { color: #111111 }
+    body.light .nav-btn { color: #111111 }
+    body.light .nav-btn:hover { background: rgba(0,0,0,0.04) }
+    body.light .win-btn { color: #111111 }
+    body.light .win-btn.close:hover { background: rgba(232,17,35,0.95); color: #fff }
+    /* Ajustes cuando la ventana está maximizada para evitar recortes visuales */
+    body.maximized { border-radius: 0; }
+    body.maximized .bar { padding-top: 6px; }
+    /* clase para mostrar con transición (usada por el proceso principal) */
+    .visible { opacity: 1 !important; transition: opacity 450ms ease !important }
   </style>
 </head>
 <body>
-  <div class="bar">
+    <div class="bar">
+    <div class="nav">
+      <button id="back" class="nav-btn" disabled title="Atrás" aria-label="Atrás">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="forward" class="nav-btn" disabled title="Adelante" aria-label="Adelante">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
     <div id="nowPlaying" class="now-playing" aria-live="polite">
       <div class="now-playing-inner">
         <img id="nowIcon" class="now-icon" src="" alt="icon" style="display:none" />
         <span id="nowText" class="now-text"></span>
       </div>
     </div>
-    <div class="nav">
-      <button id="back" class="nav-btn" disabled title="Atrás" aria-label="Atrás">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button id="forward" class="nav-btn" disabled title="Adelante" aria-label="Adelante">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
     <div class="spacer"></div>
     <div class="controls">
-      <div id="min" class="mac-btn yellow" title="Minimizar"></div>
-      <div id="max" class="mac-btn green" title="Maximizar"></div>
-      <div id="close" class="mac-btn red" title="Cerrar"></div>
+      <button id="min" class="win-btn" title="Minimizar" aria-label="Minimizar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button id="max" class="win-btn" title="Maximizar" aria-label="Maximizar">
+        <svg id="maxIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4.5" y="4.5" width="15" height="15" stroke="currentColor" stroke-width="1.5" rx="1" fill="none" />
+        </svg>
+      </button>
+      <button id="close" class="win-btn close" title="Cerrar" aria-label="Cerrar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
   </div>
   <script>
     const min = document.getElementById('min');
     const max = document.getElementById('max');
     const close = document.getElementById('close');
-
     min?.addEventListener('click', () => window.electronAPI?.minimizeWindow());
     max?.addEventListener('click', () => window.electronAPI?.maximizeWindow());
     close?.addEventListener('click', () => window.electronAPI?.closeWindow());
@@ -138,6 +163,33 @@
 
     window.electronAPI?.onNowPlaying((d) => {
       renderNowPlaying(d);
+    });
+
+    // Cambiar estilo según tema enviado desde main
+    window.electronAPI?.onThemeState((s) => {
+      try {
+        if (s && s.themeFromId === 'light') {
+          document.body.classList.add('light');
+        } else if (s && s.themeFromId === 'dark') {
+          document.body.classList.remove('light');
+        }
+        // Si themeFromId no está definido, no tocar la clase
+      } catch (e) { console.error(e); }
+    });
+
+    // Actualizar icono de maximizar cuando el estado de la ventana cambie
+    window.electronAPI?.onWindowMaximized((isMax) => {
+      try {
+        const icon = document.getElementById('maxIcon');
+        if (!icon) return;
+        // si está maximizado, mostrar icono de 'restore' (dos cuadrados superpuestos)
+        // Usar el mismo icono para maximizar y restaurar (cuadrado centrado)
+        icon.innerHTML = '<rect x="4.5" y="4.5" width="15" height="15" stroke="currentColor" stroke-width="1.5" rx="1" fill="none"/>';
+      } catch (e) { }
+    });
+    // also toggle maximized class for styling
+    window.electronAPI?.onWindowMaximized((isMax) => {
+      try { if (isMax) document.body.classList.add('maximized'); else document.body.classList.remove('maximized'); } catch(e) { }
     });
   </script>
 </body>

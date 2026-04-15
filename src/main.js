@@ -1,24 +1,112 @@
 const { app, BrowserWindow, BrowserView, Tray, Menu, ipcMain } = require('electron');
 const rpc = require('discord-rpc');
 const path = require('path');
+const fs = require('fs');
 
 const trayIconPath = path.join(__dirname, 'assets', 'tray-icon.png');
 
 let win;
 let tray;
 let client;
+let splash;
+let currentTheme = 'light'; // Track current theme ('light' or 'dark') - default LIGHT to match web defaults
+let lastAppliedTheme = 'light'; // Track the last actually applied theme to avoid re-applying
+let themeChangeTimeout = null; // Debounce timer for theme changes
+let lastDetectedThemeId = null; // Cache last detected data-theme-id to avoid false changes
+let sendThemeStateInProgress = false; // Prevent multiple simultaneous detections
+let lastThemeIdChangeTime = 0; // Track when data-theme-id last changed to prevent rapid re-applies
+
+// Get theme state path - ensure directory exists
+function getThemeStatePath() {
+  const userDataPath = app.getPath('userData');
+  try {
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true });
+    }
+  } catch(e) { console.error('[ERROR] failed to create userData dir:', e); }
+  return path.join(userDataPath, 'theme-state.json');
+}
+
+const themeStatePath = getThemeStatePath();
+
+// Load theme from file OR default to 'light' (matching most web defaults like Spotify)
+function loadTheme() {
+  try {
+    if (fs.existsSync(themeStatePath)) {
+      const content = fs.readFileSync(themeStatePath, 'utf8');
+      const data = JSON.parse(content);
+      if (data && (data.theme === 'light' || data.theme === 'dark')) {
+        currentTheme = data.theme;
+      }
+    }
+    // If file doesn't exist or theme not set, keep currentTheme = 'light' (default)
+  } catch(e) { console.error('[ERROR] theme load failed:', e); }
+  return currentTheme;
+}
+
+// Save theme to file
+function saveTheme(theme) {
+  try {
+    if (theme !== 'light' && theme !== 'dark') return;
+    const content = JSON.stringify({ theme }, null, 2);
+    fs.writeFileSync(themeStatePath, content, 'utf8');
+    currentTheme = theme;
+  } catch(e) { console.error('[ERROR] theme save failed:', e); }
+}
+
+// Get background color for theme
+function getThemeColor(theme) {
+  return theme === 'light' ? '#ffffff' : '#0f0f0f';
+}
+
+// Get splash filename for theme
+function getSplashFile(theme) {
+  return path.join(__dirname, theme === 'light' ? 'splash-light.html' : 'splash-dark.html');
+}
+
+function closeSplash(immediate = false) {
+  try {
+    if (!splash) return;
+    try { splash.webContents.executeJavaScript('window.fadeOut && window.fadeOut()').catch(()=>{}); } catch (e) {}
+    const doClose = () => { try { if (splash && !splash.isDestroyed()) splash.close(); } catch(e){} splash = null; };
+    if (immediate) doClose(); else setTimeout(doClose, 500);
+  } catch (e) { splash = null; }
+}
 
 function createWindow() {
-  // Crear la ventana sin frame nativo para poder dibujar controles propios
+  // Load persisted theme (or default to 'dark')
+  loadTheme();
+  lastAppliedTheme = currentTheme; // Initialize lastAppliedTheme
+  const bgColor = getThemeColor(currentTheme);
+
+  // Create splash with correct theme
+  try {
+    splash = new BrowserWindow({
+      width: 1281,
+      height: 850,
+      center: true,
+      frame: false,
+      show: true,
+      transparent: false,
+      backgroundColor: getThemeColor(currentTheme),
+      alwaysOnTop: true,
+      resizable: false,
+      skipTaskbar: false,
+      webPreferences: { nodeIntegration: false, contextIsolation: true }
+    });
+    splash.loadFile(getSplashFile(currentTheme));
+  } catch(e) { console.error('[ERROR] splash creation failed:', e); }
+
+  // Create main window with persisted theme background
   win = new BrowserWindow({
     width: 1281,
     height: 850,
     minWidth: 1281,
     minHeight: 850,
     center: true,
-    show: true,
+    show: false,
     frame: false,
-    backgroundColor: '#000000',
+    backgroundColor: bgColor,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -27,7 +115,9 @@ function createWindow() {
     }
   });
 
-  // Crear dos BrowserViews: uno para la barra de controles local y otro para el contenido externo
+  win.once && win.once('ready-to-show', () => { try { if (!win.isVisible()) win.show(); } catch(e){} });
+
+  // Create two BrowserViews: controls (top, fixed 40px) and content (rest)
   const controlsView = new BrowserView({
     webPreferences: {
       preload: path.join(app.getAppPath(), 'src', 'preload.js'),
@@ -50,33 +140,83 @@ function createWindow() {
   win.setBrowserView(controlsView);
   win.addBrowserView(contentView);
 
-  // Bounds: controls arriba con alto fijo, contenido ocupa el resto
   const contentBounds = win.getContentBounds();
   const controlsHeight = 40;
   controlsView.setBounds({ x: 0, y: 0, width: contentBounds.width, height: controlsHeight });
   contentView.setBounds({ x: 0, y: controlsHeight, width: contentBounds.width, height: contentBounds.height - controlsHeight });
 
-  // Cargar controles locales y el contenido remoto
+  // Load controls and content
   try {
     controlsView.webContents.loadFile(path.join(__dirname, 'controls.html'));
   } catch (e) {
     controlsView.webContents.loadURL(`file://${path.join(__dirname, 'controls.html')}`);
   }
-  // Enviar estado inicial al terminar de cargar la vista de controles
-  try { controlsView.webContents.on('did-finish-load', sendNavState); } catch (e) { }
+
   contentView.webContents.loadURL('https://open.soniditos.com');
   contentView.webContents.on('did-finish-load', () => contentView.webContents.setZoomFactor(1.0));
 
-  // Enviar estado de navegación (canGoBack / canGoForward) al controlsView
+  // Detect theme when DOM is ready
+  let domReadyTriggered = false;
+  contentView.webContents.on('dom-ready', () => {
+    if (domReadyTriggered) return;
+    domReadyTriggered = true;
+    sendThemeState(true);
+  });
+
+  // Track loading state
+  let controlsLoaded = false;
+  let contentLoaded = false;
+  const splashStartTime = Date.now();
+  const MIN_SPLASH_MS = 2000;
+
+  function tryShowIfReady() {
+    if (controlsLoaded && contentLoaded) {
+      const elapsed = Date.now() - splashStartTime;
+      const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
+      setTimeout(() => {
+        try {
+          try { controlsView.webContents.executeJavaScript("document.documentElement.classList.add('visible')"); } catch(e){}
+          try { contentView.webContents.executeJavaScript("document.documentElement.classList.add('visible')"); } catch(e){}
+
+          if (splash && splash.webContents) {
+            try { splash.webContents.executeJavaScript('window.fadeOut && window.fadeOut()').catch(()=>{}); } catch(e){}
+            setTimeout(() => {
+              try { if (!win.isVisible()) win.show(); } catch(e){}
+              try { if (splash && !splash.isDestroyed()) { splash.close(); } } catch(e){}
+              splash = null;
+            }, 300);
+          } else {
+            if (!win.isVisible()) win.show();
+          }
+        } catch (e) { console.error('[ERROR] tryShowIfReady:', e); }
+      }, remaining);
+    }
+  }
+
+  try { 
+    controlsView.webContents.on('did-finish-load', () => { 
+      console.log('[CONTROLS-LOADED] Applying theme class:', currentTheme);
+      // Apply theme class immediately when controls load
+      if (currentTheme === 'light') {
+        try { controlsView.webContents.executeJavaScript("document.body.classList.add('light')"); } catch(e){}
+      } else {
+        try { controlsView.webContents.executeJavaScript("document.body.classList.remove('light')"); } catch(e){}
+      }
+      controlsLoaded = true; 
+      tryShowIfReady(); 
+    }); 
+  } catch(e){}
+  try { contentView.webContents.on('did-finish-load', () => { contentLoaded = true; tryShowIfReady(); }); } catch(e){}
+
+  // Helper functions
   function sendNavState() {
     try {
       const canGoBack = !!(contentView && contentView.webContents && contentView.webContents.canGoBack && contentView.webContents.canGoBack());
       const canGoForward = !!(contentView && contentView.webContents && contentView.webContents.canGoForward && contentView.webContents.canGoForward());
       try { controlsView.webContents.send('nav-state', { canGoBack, canGoForward }); } catch (e) { }
-    } catch (e) { /* ignore */ }
+    } catch (e) { }
   }
 
-  // Enviar información de 'ahora sonando' al controlsView
   async function sendNowPlaying() {
     try {
       if (!contentView || !contentView.webContents) return;
@@ -85,19 +225,111 @@ function createWindow() {
       const artwork = await contentView.webContents.executeJavaScript('navigator.mediaSession.metadata?.artwork?.[0]?.src || null').catch(() => null);
       const playbackState = await contentView.webContents.executeJavaScript('navigator.mediaSession.playbackState || null').catch(() => null);
       try { controlsView.webContents.send('now-playing', { title, artist, artwork, playbackState }); } catch (e) { }
-    } catch (e) { /* ignore */ }
+    } catch (e) { }
   }
 
-  // Poll periódico y envíos en eventos para mantener actualizado el now-playing
+  async function sendThemeState(forceApply = false) {
+    try {
+      if (sendThemeStateInProgress) return;
+      sendThemeStateInProgress = true;
+
+      if (!contentView || !contentView.webContents) {
+        sendThemeStateInProgress = false;
+        return;
+      }
+
+      // data-theme-id is ALWAYS present: "1"=dark, "2"=light
+      const themeId = await contentView.webContents.executeJavaScript(
+        'document.documentElement.getAttribute("data-theme-id")'
+      ).catch(() => null);
+
+      // If not readable (page still loading), do nothing - never change theme on missing data
+      if (themeId !== '1' && themeId !== '2') {
+        sendThemeStateInProgress = false;
+        return;
+      }
+
+      const detectedTheme = themeId === '2' ? 'light' : 'dark';
+
+      if (detectedTheme !== lastAppliedTheme || forceApply) {
+        lastDetectedThemeId = themeId;
+        lastAppliedTheme = detectedTheme;
+        saveTheme(detectedTheme);
+        const newBgColor = getThemeColor(detectedTheme);
+        try { win.setBackgroundColor(newBgColor); } catch(e){}
+        if (detectedTheme === 'light') {
+          try { controlsView.webContents.executeJavaScript("document.body.classList.add('light')"); } catch(e){}
+        } else {
+          try { controlsView.webContents.executeJavaScript("document.body.classList.remove('light')"); } catch(e){}
+        }
+      } else {
+        lastDetectedThemeId = themeId;
+      }
+
+      try { controlsView.webContents.send('theme-state', { themeFromId: detectedTheme, dataThemeId: themeId, isLight: detectedTheme === 'light' }); } catch(e){}
+      sendThemeStateInProgress = false;
+    } catch(e) {
+      sendThemeStateInProgress = false;
+    }
+  }
+
+  // Setup intervals and event listeners
   let nowPlayingInterval = null;
   try {
-    nowPlayingInterval = setInterval(sendNowPlaying, 2000);
+    nowPlayingInterval = setInterval(sendNowPlaying, 1000);
     contentView.webContents.on('did-finish-load', sendNowPlaying);
     contentView.webContents.on('did-navigate', sendNowPlaying);
     contentView.webContents.on('did-navigate-in-page', sendNowPlaying);
   } catch (e) { }
 
-  // Actualizar estado en eventos de navegación
+  let themeInterval = null;
+  try {
+    // Inject a MutationObserver in the page that caches data-theme-id into window.__sntThemeId
+    // This way changes are captured instantly; we only need a fast lightweight poll to read the cached value
+    function injectThemeObserver() {
+      try {
+        contentView.webContents.executeJavaScript(`
+          (function() {
+            window.__sntThemeId = document.documentElement.getAttribute('data-theme-id');
+            if (window.__sntThemeObserver) window.__sntThemeObserver.disconnect();
+            window.__sntThemeObserver = new MutationObserver(function() {
+              window.__sntThemeId = document.documentElement.getAttribute('data-theme-id');
+            });
+            window.__sntThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme-id'] });
+          })();
+        `).catch(() => {});
+      } catch(e) {}
+    }
+
+    contentView.webContents.on('did-finish-load', () => { 
+      injectThemeObserver();
+      sendThemeState(true);
+      contentLoaded = true; 
+      tryShowIfReady(); 
+    });
+    contentView.webContents.on('did-navigate', () => {
+      injectThemeObserver();
+      sendThemeState(true);
+    });
+    contentView.webContents.on('did-navigate-in-page', () => {
+      injectThemeObserver();
+      sendThemeState(true);
+    });
+
+    // Fast poll every 300ms reading only the cached window.__sntThemeId (set by MutationObserver)
+    // Much cheaper than running executeJavaScript on the full DOM every tick
+    themeInterval = setInterval(async () => {
+      try {
+        if (sendThemeStateInProgress || !contentView || !contentView.webContents) return;
+        const themeId = await contentView.webContents.executeJavaScript('window.__sntThemeId || null').catch(() => null);
+        if (themeId !== '1' && themeId !== '2') return;
+        if (themeId !== lastDetectedThemeId) {
+          await sendThemeState(true);
+        }
+      } catch(e) {}
+    }, 300);
+  } catch (e) { }
+
   try {
     contentView.webContents.on('did-navigate', sendNavState);
     contentView.webContents.on('did-navigate-in-page', sendNavState);
@@ -105,13 +337,12 @@ function createWindow() {
     contentView.webContents.on('dom-ready', sendNavState);
   } catch (e) { }
 
-  // Responder a solicitudes del renderer de controls para enviar estado actual
   ipcMain.removeAllListeners('request-nav-state');
   ipcMain.on('request-nav-state', () => sendNavState());
 
   win.setMenuBarVisibility(false);
 
-  // Permitir abrir/cerrar DevTools con F12 (útil cuando las teclas no llegan)
+  // DevTools toggle with F12
   try {
     win.webContents.on('before-input-event', (event, input) => {
       if (input.key === 'F12') {
@@ -131,33 +362,35 @@ function createWindow() {
     });
   } catch (e) { }
 
-  // Manejar eventos IPC expuestos desde el preload (controles)
+  // IPC Handlers for window controls
   ipcMain.removeAllListeners('window-close');
   ipcMain.removeAllListeners('window-minimize');
   ipcMain.removeAllListeners('window-maximize');
   ipcMain.on('window-close', () => {
-    if (!app.isQuiting && win) return win.hide();
-    if (win) return win.close();
+    app.isQuiting = true;
+    if (win) win.close();
   });
   ipcMain.on('window-minimize', () => { if (win) win.minimize(); });
   ipcMain.on('window-maximize', () => {
     if (!win) return;
     if (win.isMaximized()) win.unmaximize(); else win.maximize();
   });
-  // Navegación atrás/adelante desde los controles
+
+  // Navigation handlers
   ipcMain.removeAllListeners('navigate-back');
   ipcMain.removeAllListeners('navigate-forward');
   ipcMain.on('navigate-back', () => {
     try {
       if (contentView && contentView.webContents && contentView.webContents.canGoBack()) contentView.webContents.goBack();
-    } catch (e) { /* ignore */ }
+    } catch (e) { }
   });
   ipcMain.on('navigate-forward', () => {
     try {
       if (contentView && contentView.webContents && contentView.webContents.canGoForward()) contentView.webContents.goForward();
-    } catch (e) { /* ignore */ }
+    } catch (e) { }
   });
 
+  // Window events
   win.on('close', (event) => {
     if (!app.isQuiting) {
       event.preventDefault();
@@ -167,15 +400,16 @@ function createWindow() {
 
   win.on('closed', () => { 
     if (nowPlayingInterval) clearInterval(nowPlayingInterval);
+    if (themeInterval) clearInterval(themeInterval);
     win = null; 
   });
 
-  // Manejar eventos de maximizar/restaurar para ajustar correctamente los BrowserViews
   win.on('maximize', () => {
     try {
       const b = win.getContentBounds();
       controlsView.setBounds({ x: 0, y: 0, width: b.width, height: controlsHeight });
       contentView.setBounds({ x: 0, y: controlsHeight, width: b.width, height: b.height - controlsHeight });
+      try { controlsView.webContents.send('window-maximized', true); } catch (e) { }
     } catch (e) { }
   });
 
@@ -184,11 +418,11 @@ function createWindow() {
       const b = win.getContentBounds();
       controlsView.setBounds({ x: 0, y: 0, width: b.width, height: controlsHeight });
       contentView.setBounds({ x: 0, y: controlsHeight, width: b.width, height: b.height - controlsHeight });
+      try { controlsView.webContents.send('window-maximized', false); } catch (e) { }
     } catch (e) { }
   });
 
-  // Asegurar que la barra de controles quede encima y ajustar BrowserViews cuando la ventana cambie de tamaño
-  try { win.setTopBrowserView(controlsView); } catch (e) { /* ignore if not supported */ }
+  try { win.setTopBrowserView(controlsView); } catch (e) { }
   win.on('resize', () => {
     try {
       const b = win.getContentBounds();
