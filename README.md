@@ -73,7 +73,7 @@ soniditos-desktop/
 </p>
 
 <p align="center">
-	Copyright &copy; 2025
+	Copyright &copy; 2026
 </p>
 
 <p align="center">

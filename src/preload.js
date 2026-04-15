@@ -21,6 +21,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('now-playing', listener);
     return () => ipcRenderer.removeListener('now-playing', listener);
   }
+  ,
+  // Suscribirse a cambios de tema (claro/oscuro) enviados desde el proceso principal
+  onThemeState: (callback) => {
+    const listener = (event, data) => callback(data);
+    ipcRenderer.on('theme-state', listener);
+    return () => ipcRenderer.removeListener('theme-state', listener);
+  }
+  ,
+  // Escuchar cambios de maximizado desde el proceso principal
+  onWindowMaximized: (callback) => {
+    const listener = (event, data) => callback(data);
+    ipcRenderer.on('window-maximized', listener);
+    return () => ipcRenderer.removeListener('window-maximized', listener);
+  }
 });
 
 // Permitir que el renderer envíe metadatos de media al proceso principal
