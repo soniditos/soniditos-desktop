@@ -10,6 +10,7 @@ let win;
 let tray;
 let client;
 let splash;
+let showWindow = () => { if (win) { win.show(); win.focus(); } };
 let currentTheme = 'light'; // Track current theme ('light' or 'dark') - default LIGHT to match web defaults
 let lastAppliedTheme = 'light'; // Track the last actually applied theme to avoid re-applying
 let themeChangeTimeout = null; // Debounce timer for theme changes
@@ -92,7 +93,7 @@ function createWindow() {
       backgroundColor: getThemeColor(currentTheme),
       alwaysOnTop: true,
       resizable: false,
-      skipTaskbar: false,
+      skipTaskbar: true,
       webPreferences: { nodeIntegration: false, contextIsolation: true }
     });
     splash.loadFile(getSplashFile(currentTheme));
@@ -116,7 +117,7 @@ function createWindow() {
     }
   });
 
-  win.once && win.once('ready-to-show', () => { try { if (!win.isVisible()) win.show(); } catch(e){} });
+  // (ready-to-show no se usa aquí: tryShowIfReady gestiona cuándo mostrar win)
 
   // Create two BrowserViews: controls (top, fixed 40px) and content (rest)
   const controlsView = new BrowserView({
@@ -424,6 +425,27 @@ function createWindow() {
   });
 
   try { win.setTopBrowserView(controlsView); } catch (e) { }
+
+  // Helper para restaurar la ventana desde tray: recalcula bounds de las vistas
+  showWindow = () => {
+    try {
+      if (!win || win.isDestroyed()) return;
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+      // Esperar a que la ventana esté completamente visible antes de recalcular bounds
+      setTimeout(() => {
+        try {
+          const b = win.getContentBounds();
+          if (b.width > 0 && b.height > 0) {
+            controlsView.setBounds({ x: 0, y: 0, width: b.width, height: controlsHeight });
+            contentView.setBounds({ x: 0, y: controlsHeight, width: b.width, height: b.height - controlsHeight });
+          }
+        } catch (e) { }
+      }, 50);
+    } catch (e) { }
+  };
+
   win.on('resize', () => {
     try {
       const b = win.getContentBounds();
@@ -541,9 +563,7 @@ function createTray() {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Mostrar aplicación',
-      click: () => {
-        if (win) win.show();
-      }
+      click: () => showWindow()
     },
     {
       label: 'Cerrar',
@@ -557,9 +577,8 @@ function createTray() {
   tray.setToolTip('open.soniditos.com');
   tray.setContextMenu(contextMenu);
 
-  tray.on('double-click', () => {
-    if (win) win.show();
-  });
+  tray.on('click', () => showWindow());
+  tray.on('double-click', () => showWindow());
 }
 
 // Auto-update: silent download, install automatically when app quits
@@ -575,7 +594,7 @@ autoUpdater.on('update-downloaded', () => {
       { label: 'Actualización lista — Reiniciar para instalar', enabled: false },
       { label: 'Reiniciar y actualizar', click: () => { autoUpdater.quitAndInstall(); } },
       { type: 'separator' },
-      { label: 'Mostrar aplicación', click: () => { if (win) win.show(); } },
+      { label: 'Mostrar aplicación', click: () => showWindow() },
       { label: 'Cerrar', click: () => { app.isQuiting = true; app.quit(); } }
     ]);
     tray.setContextMenu(contextMenu);
@@ -616,9 +635,7 @@ if (!gotTheLock) {
     try {
       // Preferir la ventana global `win` si existe
       if (typeof win !== 'undefined' && win && !win.isDestroyed()) {
-        try { win?.show?.(); } catch (err) { /* ignore */ }
-        try { win?.restore?.(); } catch (err) { /* ignore */ }
-        try { win?.focus?.(); } catch (err) { /* ignore */ }
+        try { showWindow(); } catch (err) { /* ignore */ }
         return;
       }
 
@@ -627,7 +644,6 @@ if (!gotTheLock) {
       const singleInstance = (Array.isArray(wins) && wins.length) ? wins[0] : null;
       if (singleInstance) {
         try { singleInstance?.show?.(); } catch (err) { /* ignore */ }
-        try { singleInstance?.restore?.(); } catch (err) { /* ignore */ }
         try { singleInstance?.focus?.(); } catch (err) { /* ignore */ }
         return;
       }
