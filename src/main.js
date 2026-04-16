@@ -598,7 +598,7 @@ autoUpdater.on('update-downloaded', () => {
   if (tray) {
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Actualización lista — Reiniciar para instalar', enabled: false },
-      { label: 'Reiniciar y actualizar', click: () => { autoUpdater.quitAndInstall(); } },
+      { label: 'Reiniciar y actualizar', click: () => { app.isQuiting = true; autoUpdater.quitAndInstall(); } },
       { type: 'separator' },
       { label: 'Mostrar aplicación', click: () => showWindow() },
       { label: 'Cerrar', click: () => { app.isQuiting = true; app.quit(); } }
