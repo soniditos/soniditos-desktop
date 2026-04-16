@@ -1,6 +1,6 @@
 {
   "name": "soniditos-desktop",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Soniditos",
   "main": "src/main.js",
   "scripts": {
@@ -44,7 +44,9 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "uninstallDisplayName": "Soniditos",
+      "deleteAppDataOnUninstall": false
     },
     "publish": {
       "provider": "github",
