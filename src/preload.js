@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeWindow: () => ipcRenderer.send('window-maximize'),
   navigateBack: () => ipcRenderer.send('navigate-back'),
   navigateForward: () => ipcRenderer.send('navigate-forward'),
+  reloadPage: () => ipcRenderer.send('navigate-reload'),
   // Suscribirse a cambios de estado de navegación desde el proceso principal
   onNavigationState: (callback) => {
     const listener = (event, state) => callback(state);

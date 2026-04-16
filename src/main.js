@@ -381,6 +381,7 @@ function createWindow() {
   // Navigation handlers
   ipcMain.removeAllListeners('navigate-back');
   ipcMain.removeAllListeners('navigate-forward');
+  ipcMain.removeAllListeners('navigate-reload');
   ipcMain.on('navigate-back', () => {
     try {
       if (contentView && contentView.webContents && contentView.webContents.canGoBack()) contentView.webContents.goBack();
@@ -389,6 +390,11 @@ function createWindow() {
   ipcMain.on('navigate-forward', () => {
     try {
       if (contentView && contentView.webContents && contentView.webContents.canGoForward()) contentView.webContents.goForward();
+    } catch (e) { }
+  });
+  ipcMain.on('navigate-reload', () => {
+    try {
+      if (contentView && contentView.webContents) contentView.webContents.reload();
     } catch (e) { }
   });
 

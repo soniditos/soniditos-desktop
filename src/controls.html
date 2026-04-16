@@ -77,6 +77,9 @@
       <button id="forward" class="nav-btn" disabled title="Adelante" aria-label="Adelante">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
+      <button id="reload" class="nav-btn" title="Recargar" aria-label="Recargar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 4v6h-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
     <div id="nowPlaying" class="now-playing" aria-live="polite">
       <div class="now-playing-inner">
@@ -114,6 +117,8 @@
     if (forward) forward.disabled = true;
     back?.addEventListener('click', (e) => { if (back.disabled) return; window.electronAPI?.navigateBack(); });
     forward?.addEventListener('click', (e) => { if (forward.disabled) return; window.electronAPI?.navigateForward(); });
+    const reload = document.getElementById('reload');
+    reload?.addEventListener('click', () => window.electronAPI?.reloadPage());
 
     // Actualizar estado según mensajes del proceso principal
     window.electronAPI?.onNavigationState((state) => {
