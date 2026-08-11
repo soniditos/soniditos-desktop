@@ -615,6 +615,11 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(permission === 'media');
   });
+  // Chromium también consulta este handler síncrono (p.ej. navigator.permissions.query)
+  // además del de arriba; sin él sigue denegando aunque el request handler permita 'media'.
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    return permission === 'media';
+  });
 
   createWindow();
   createTray();
