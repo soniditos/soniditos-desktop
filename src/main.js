@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, Tray, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, BrowserView, Tray, Menu, ipcMain, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const rpc = require('discord-rpc');
 const path = require('path');
@@ -609,6 +609,13 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 app.whenReady().then(() => {
+  // Electron deniega getUserMedia por defecto salvo que la app lo conceda
+  // explícitamente. Sin esto, el botón de búsqueda por voz aparece (la API
+  // existe) pero nunca llega a recibir permiso de micrófono.
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(permission === 'media');
+  });
+
   createWindow();
   createTray();
 
