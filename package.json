@@ -1,6 +1,6 @@
 {
   "name": "soniditos-desktop",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Soniditos",
   "main": "src/main.js",
   "scripts": {
