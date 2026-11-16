@@ -213,8 +213,8 @@ function createWindow() {
   // Helper functions
   function sendNavState() {
     try {
-      const canGoBack = !!(contentView && contentView.webContents && contentView.webContents.canGoBack && contentView.webContents.canGoBack());
-      const canGoForward = !!(contentView && contentView.webContents && contentView.webContents.canGoForward && contentView.webContents.canGoForward());
+      const canGoBack = !!(contentView && contentView.webContents && contentView.webContents.canGoBack && contentView.webContents.navigationHistory.canGoBack());
+      const canGoForward = !!(contentView && contentView.webContents && contentView.webContents.canGoForward && contentView.webContents.navigationHistory.canGoForward());
       try { controlsView.webContents.send('nav-state', { canGoBack, canGoForward }); } catch (e) { }
     } catch (e) { }
   }
@@ -384,12 +384,12 @@ function createWindow() {
   ipcMain.removeAllListeners('navigate-reload');
   ipcMain.on('navigate-back', () => {
     try {
-      if (contentView && contentView.webContents && contentView.webContents.canGoBack()) contentView.webContents.goBack();
+      if (contentView && contentView.webContents && contentView.webContents.navigationHistory.canGoBack()) contentView.webContents.navigationHistory.goBack();
     } catch (e) { }
   });
   ipcMain.on('navigate-forward', () => {
     try {
-      if (contentView && contentView.webContents && contentView.webContents.canGoForward()) contentView.webContents.goForward();
+      if (contentView && contentView.webContents && contentView.webContents.navigationHistory.canGoForward()) contentView.webContents.navigationHistory.goForward();
     } catch (e) { }
   });
   ipcMain.on('navigate-reload', () => {
