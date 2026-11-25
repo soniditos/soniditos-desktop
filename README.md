@@ -1,3 +1,5 @@
+<p align="center"><b>Español</b> · <a href="README.en.md">English</a></p>
+
 <h1 align="center">Soniditos Desktop</h1>
 
 <p align="center">
