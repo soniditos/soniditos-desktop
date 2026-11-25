@@ -8,19 +8,19 @@
 
 <p align="center">
   <a href="https://github.com/soniditos/soniditos-desktop/releases/latest"><img src="https://img.shields.io/github/v/release/soniditos/soniditos-desktop?style=for-the-badge&label=Download&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
-  <a href="/LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
 </p>
 
 ---
 ## For users 🙋‍♂️
 
-## Installation
+### Installation
 
 Download the installer from [**Releases**](https://github.com/soniditos/soniditos-desktop/releases/latest), run it and you're done.
 
 The app **updates automatically** when a new version is available.
 
-## What it does
+### What it does
 
 - **Custom control bar** with built-in window and navigation buttons.
 - **Automatic theme** detects the site's light or dark theme and adapts the window instantly.
@@ -36,8 +36,6 @@ The app **updates automatically** when a new version is available.
 
 - Node.js 18+
 - npm 9+
-- electron
-- electron-builder
 
 ### Running in development
 
@@ -45,7 +43,7 @@ The app **updates automatically** when a new version is available.
 git clone https://github.com/soniditos/soniditos-desktop.git
 cd soniditos-desktop
 npm install
-npm run start
+npm start
 ```
 
 ### Project structure
@@ -86,7 +84,7 @@ It reads `navigator.mediaSession` (title, artist, album, cover) and the playback
 
 **Automatic updates**
 
-`electron-updater` checks GitHub Releases 3 seconds after startup. The download is silent; the installation runs automatically on exit. While the update is ready, the tray menu shows the option to restart and install it.
+`electron-updater` checks GitHub Releases 3 seconds after startup. The download is silent; the installation runs automatically on exit. When the update is ready, the tray menu shows the option to restart and install it.
 
 ### Scripts
 
@@ -111,5 +109,5 @@ It reads `navigator.mediaSession` (title, artist, album, cover) and the playback
 </p>
 
 <p align="center">
-	<a href="/LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+	<a href="LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
 </p>

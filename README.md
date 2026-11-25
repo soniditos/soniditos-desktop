@@ -8,19 +8,19 @@
 
 <p align="center">
   <a href="https://github.com/soniditos/soniditos-desktop/releases/latest"><img src="https://img.shields.io/github/v/release/soniditos/soniditos-desktop?style=for-the-badge&label=Descargar&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
-  <a href="/LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=Licencia&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=Licencia&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
 </p>
 
 ---
 ## Para usuarios 🙋‍♂️
 
-## Instalación
+### Instalación
 
 Descarga el instalador desde [**Releases**](https://github.com/soniditos/soniditos-desktop/releases/latest), ejecútalo y listo.
 
 La app se **actualiza automáticamente** cuando hay una nueva versión disponible.
 
-## Qué hace
+### Qué hace
 
 - **Barra de controles personalizada** con botones de ventana y navegación integrados.
 - **Tema automático** detecta el tema claro u oscuro de la web y adapta la ventana al instante.
@@ -36,8 +36,6 @@ La app se **actualiza automáticamente** cuando hay una nueva versión disponibl
 
 - Node.js 18+
 - npm 9+
-- electron
-- electron-builder
 
 ### Arrancar en desarrollo
 
@@ -45,7 +43,7 @@ La app se **actualiza automáticamente** cuando hay una nueva versión disponibl
 git clone https://github.com/soniditos/soniditos-desktop.git
 cd soniditos-desktop
 npm install
-npm run start
+npm start
 ```
 
 ### Estructura del proyecto
@@ -86,7 +84,7 @@ Lee `navigator.mediaSession` (título, artista, álbum, portada) y el timestamp 
 
 **Actualizaciones automáticas**
 
-`electron-updater` comprueba GitHub Releases 3 segundos después del arranque. La descarga es silenciosa; la instalación se ejecuta automáticamente al salir. Mientras la actualización está lista, el menú de bandeja muestra la opción de reiniciar para instalarla.
+`electron-updater` comprueba GitHub Releases 3 segundos después del arranque. La descarga es silenciosa; la instalación se ejecuta automáticamente al salir. Cuando la actualización está lista, el menú de bandeja muestra la opción de reiniciar para instalarla.
 
 ### Scripts
 
@@ -111,5 +109,5 @@ Lee `navigator.mediaSession` (título, artista, álbum, portada) y el timestamp 
 </p>
 
 <p align="center">
-	<a href="/LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
+	<a href="LICENSE"><img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=d9e0ee&colorA=363a4f&colorB=b7bdf8"/></a>
 </p>

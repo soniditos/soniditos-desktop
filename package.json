@@ -7,19 +7,18 @@
     "start": "electron .",
     "build": "electron-builder",
     "release": "dotenv electron-builder --publish always",
-    "icon": "electron-icon-maker --input src/assets/tray-icon.png --output src/assets"
+    "icon": "npx --yes electron-icon-maker@0.0.5 --input src/assets/tray-icon.png --output src/assets"
   },
   "author": "Soniditos",
   "license": "MIT",
   "dependencies": {
     "discord-rpc": "^4.0.1",
-    "electron-icon-maker": "^0.0.5",
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "dotenv-cli": "^11.0.0",
-    "electron": "^34.0.1",
-    "electron-builder": "^25.1.8"
+    "electron": "^42.11.18",
+    "electron-builder": "^26.18.0"
   },
   "build": {
     "appId": "com.soniditos.desktop",
@@ -33,8 +32,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "src/assets/icons/win/icon.ico",
-      "sign": false
+      "icon": "src/assets/icons/win/icon.ico"
     },
     "mac": {
       "icon": "src/assets/icons/mac/icon.icns"

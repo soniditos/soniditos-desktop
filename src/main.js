@@ -490,13 +490,13 @@ function setupDiscordRPC(view) {
             const startTimeElement = await getStartTimeElement(view);
             startTime = startTimeElement ? startTimeElement.trim() : "Descubriendo...";
 
-            client.request('SET_ACTIVITY', {
+            await client.request('SET_ACTIVITY', {
               pid: process.pid,
               activity: {
                 details: `${artist} - ${title}`,
-                timestamps: {
-                  start: startTime ? Date.now() - parseTimestamp(startTime) : null,
-                },
+                ...(Number.isFinite(parseTimestamp(startTime)) && {
+                  timestamps: { start: Date.now() - parseTimestamp(startTime) }
+                }),
                 assets: {
                   large_image: artwork,
                   large_text: album,
